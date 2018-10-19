@@ -31,12 +31,10 @@ def generateGPSCoordinates():
     locations = \
         [(-33.881656, 151.205913),
         (-33.873199, 151.208848), (-33.863333, 151.206831),
-        (-33.875752, 151.218998), (-33.869785, 151.193664),
-        (-33.891927, 151.211595), (-33.878716, 151.199230),
-        (-33.892750, 151.203915), (-33.877291, 151.190818),
-        (-33.873967, 151.236424), (-33.868141, 151.211221),
-        (-33.836186, 151.207338), (-33.837004, 151.224960)
+        (-33.875752, 151.218998), (-33.869785, 151.193664)
         ]
+
+    demands = generateDemands(locations)    
     '''
     locations = \
         [(-33.881656, 151.205913),
@@ -52,7 +50,7 @@ def generateGPSCoordinates():
         ]
     '''
 
-    return locations
+    return locations, demands
 
 
 def generateDemands(locations):
@@ -80,7 +78,7 @@ class DataProblem():
 
     def __init__(self, locations=generateGPSCoordinates(), demands=generateDemands(generateGPSCoordinates())):
         self._vehicle = Vehicle()
-        self._num_vehicles = 3
+        self._num_vehicles = 10
         self._locations = locations
         self._depot = 0
         self._demands = demands
@@ -160,7 +158,6 @@ def add_capacity_constraints(routing, data, demand_evaluator):
 
 
 def parseSolution(data, routing, assignment):
-    print('parsing solution')
     output = {}
     total_dist = 0
     for vehicle_id in xrange(data.num_vehicles):
@@ -188,8 +185,9 @@ def parseSolution(data, routing, assignment):
     return output
 
 
-def solveCVRPRoutingSolution():
-    data = DataProblem()
+def solveCVRPRoutingSolution(demands):
+    locations, d = generateGPSCoordinates()
+    data = DataProblem(locations=locations, demands=demands)
     routing = pywrapcp.RoutingModel(data.num_locations, data.num_vehicles, data.depot)
     distance_evaluator = CreateDistanceEvaluator(data).distance_evaluator
 
@@ -200,8 +198,10 @@ def solveCVRPRoutingSolution():
 
     search_parameters = pywrapcp.RoutingModel.DefaultSearchParameters()
     search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+        routing_enums_pb2.FirstSolutionStrategy.SAVINGS)
+    print(search_parameters)
 
     assignment = routing.SolveWithParameters(search_parameters)
+    print(routing.status())
 
     return parseSolution(data, routing, assignment)
